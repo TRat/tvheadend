@@ -247,9 +247,9 @@ static int
 service_get_prio(service_t *t)
 {
   switch(t->s_type) {
-  case SERVICE_TYPE_DVB:
-    return (t->s_scrambled ? 300 : 100) + 
-      dvb_extra_prio(t->s_dvb_mux_instance->tdmi_adapter);
+  case SERVICE_TYPE_DVB: 
+    return (t->s_scrambled ? 300 : 100) +
+        dvb_extra_prio(t->s_dvb_mux_instance->tdmi_adapter) + t->s_priority;
 
   case SERVICE_TYPE_IPTV:
     return 200;
@@ -1206,4 +1206,11 @@ htsmsg_t *servicetype_list ( void )
     htsmsg_add_msg(ret, NULL, e);
   }
   return ret;
+}
+
+void
+service_set_priority(service_t *t, int priority)
+{
+  t->s_priority = priority;
+  t->s_config_save(t);
 }

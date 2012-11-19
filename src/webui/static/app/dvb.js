@@ -450,7 +450,7 @@ tvheadend.dvb_services = function(adapterId) {
 		{
 			header : "DVB charset",
 			dataIndex : 'dvb_charset',
-			width : 200,
+			width : 100,
 			renderer : function(value, metadata, record, row, col, store) {
 				return value ? value
 					: '<span class="tvh-grid-unset">auto</span>';
@@ -505,12 +505,17 @@ tvheadend.dvb_services = function(adapterId) {
 			header : "Service ID",
 			dataIndex : 'sid',
 			width : 50,
-			hidden : true
+			hidden : false
 		}, {
 			header: "Preffered CA pid",
 			dataIndex: 'prefcapid',
 			width: 50,
 			editor: new fm.TextField({allowBlank: true})
+		}, {
+	                header: "Priority",
+                        dataIndex: 'priority',
+	                width: 50,
+                        editor: new fm.TextField({allowBlank: true})
 		}, {
 			header : "PMT PID",
 			dataIndex : 'pmt',
@@ -527,7 +532,7 @@ tvheadend.dvb_services = function(adapterId) {
 		root : 'entries',
 		fields : Ext.data.Record.create([ 'id', 'enabled', 'type', 'sid', 'pmt',
 			'pcr', 'svcname', 'network', 'provider', 'mux', 'channelname', 'prefcapid',
-			'dvb_charset', 'dvb_eit_enable' ]),
+			'priority', 'dvb_charset', 'dvb_eit_enable' ]),
 		url : "dvb/services/" + adapterId,
 		autoLoad : true,
 		id : 'id',
