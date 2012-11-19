@@ -307,11 +307,11 @@ psi_desc_ca(service_t *t, const uint8_t *buffer, int size)
       i += nanolen;
     }
     break;
-  case 0x4a00://DRECrypt
-    if (caid != 0x4aee) { // Bulcrypt
-      provid = size < 4 ? 0 : buffer[4];
-      break;
-    }
+//  case 0x4a00://DRECrypt
+//    if (caid != 0x4aee) { // Bulcrypt
+//      provid = size < 4 ? 0 : buffer[4];
+//      break;
+//    }
   default:
     provid = 0;
     break;
@@ -903,7 +903,7 @@ static struct strtab caidnametab[] = {
 const char *
 psi_caid2name(uint16_t caid)
 {
-  const char *s = val2str(caid, caidnametab);
+  const char *s = val2str(caid&0xFF00, caidnametab);
   static char buf[20];
 
   if(s != NULL)
