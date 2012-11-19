@@ -169,6 +169,7 @@ SRCS-${CONFIG_V4L} += \
 # CWC
 SRCS-${CONFIG_CWC} += src/cwc.c \
 	src/capmt.c \
+        src/ccw.c \
 	src/ffdecsa/ffdecsa_interface.c \
 	src/ffdecsa/ffdecsa_int.c
 
