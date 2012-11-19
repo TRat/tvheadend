@@ -294,6 +294,8 @@ channels_load(void)
 {
   htsmsg_t *l, *c;
   htsmsg_field_t *f;
+  channel_t *ch, *x;
+  int cnt;
 
   if((l = hts_settings_load("channels")) != NULL) {
     HTSMSG_FOREACH(f, l) {
@@ -302,6 +304,18 @@ channels_load(void)
       channel_load_one(c, atoi(f->hmf_name));
     }
     htsmsg_destroy(l);
+  }
+
+  cnt = 0;
+  RB_FOREACH(ch, &channel_name_tree, ch_name_link) {
+    cnt++;
+    if (ch->ch_number == cnt) continue;
+    RB_REMOVE(&channel_identifier_tree, ch, ch_identifier_link);
+    ch->ch_number = cnt;
+    x = RB_INSERT_SORTED(&channel_identifier_tree, ch, ch_identifier_link, chidcmp);
+    assert(x == NULL);
+
+    channel_save(ch);
   }
 }
 
