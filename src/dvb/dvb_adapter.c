@@ -514,6 +514,9 @@ tda_add(int adapter_num)
   if(!strcmp(tda->tda_fe_info->name, "Sony CXD2820R (DVB-T/T2)"))
     tda->tda_snr_valid = 1;
 
+  if(!strcmp(tda->tda_fe_info->name, "STV090x Multistandard"))
+    tda->tda_snr_valid = 1;
+
   tvhlog(LOG_INFO, "dvb",
 	 "Found adapter %s (%s) via %s%s", path, tda->tda_fe_info->name,
 	 hostconnection2str(tda->tda_hostconnection),
