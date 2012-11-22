@@ -481,9 +481,6 @@ dvb_pat_callback(th_dvb_mux_instance_t *tdmi, uint8_t *ptr, int len,
   th_dvb_mux_instance_t *other;
   th_dvb_adapter_t *tda = tdmi->tdmi_adapter;
   uint16_t service, pmt, tsid;
-  service_t *t;
-  uint8_t *ptr1;
-  int len1, fnd;
 
   if(len < 5)
     return -1;
@@ -512,26 +509,6 @@ dvb_pat_callback(th_dvb_mux_instance_t *tdmi, uint8_t *ptr, int len,
 
   ptr += 5;
   len -= 5;
-
-  LIST_FOREACH(t, &tdmi->tdmi_transports, s_group_link) {
-      ptr1 = ptr;
-      len1 = len;
-      fnd = 0;
-      while(len1 >= 4) {
-        service =  ptr1[0] << 8 | ptr1[1];
-        if(service == t->s_dvb_service_id ) fnd = 1;
-        ptr1 += 4;
-        len1 -= 4;
-      }
-
-      if (fnd == 0) {
-        tvhlog(LOG_NOTICE, "dvb", "tansport %d (%s) not found in mux %d. Deleting. \n", t->s_dvb_service_id, t->s_svcname, tdmi->tdmi_transport_stream_id );
-        hts_settings_remove("dvbtransports/%s/%s",
-                            t->s_dvb_mux_instance->tdmi_identifier,
-                            t->s_identifier);
-        service_destroy(t);
-      }
-  }
 
   while(len >= 4) {
     service =  ptr[0]         << 8 | ptr[1];
