@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/dmx.h>
@@ -43,6 +44,18 @@
 #include "streaming.h"
 
 #include "epggrab.h"
+
+/*--------------------------------------------------------------------------*/
+
+static inline void
+msleep(uint32_t msec)
+{
+  struct timespec req = { msec / 1000, 1000000 * (msec % 1000) };
+
+  while (nanosleep(&req, &req))
+    ;
+}
+
 
 /**
  * Return uncorrected block (since last read)
@@ -518,6 +531,7 @@ dvb_fe_tune(th_dvb_mux_instance_t *tdmi, const char *reason)
 
   gtimer_arm(&tda->tda_fe_monitor_timer, dvb_fe_monitor, tda, 1);
 
+  msleep(250);  // delay before connect tables callback to ignore packets from old mux
 
   dvb_table_add_default(tdmi);
   epggrab_mux_start(tdmi);
