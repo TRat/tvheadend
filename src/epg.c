@@ -1378,8 +1378,10 @@ static void _epg_channel_timer_callback ( void *p )
 
     /* Expire */
     if ( ebc->stop <= dispatch_clock ) {
+#ifdef EPG_TIMER_TRACE
       tvhlog(LOG_DEBUG, "epg", "expire event %u from %s",
              ebc->id, ch->ch_name);
+#endif
       _epg_channel_rem_broadcast(ch, ebc, NULL);
       continue; // skip to next
 
@@ -1397,24 +1399,30 @@ static void _epg_channel_timer_callback ( void *p )
     break;
   }
   
+#ifdef EPG_TIMER_TRACE
   /* Change */
   if (cur != ch->ch_epg_now || nxt != ch->ch_epg_next)
     tvhlog(LOG_DEBUG, "epg", "now/next %u/%u set on %s",
            ch->ch_epg_now  ? ch->ch_epg_now->id : 0,
            ch->ch_epg_next ? ch->ch_epg_next->id : 0,
            ch->ch_name);
+#endif
 
   /* re-arm */
   if ( next ) {
+#ifdef EPG_TIMER_TRACE
     tvhlog(LOG_DEBUG, "epg", "arm channel timer @ %"PRItime_t" for %s",
            next, ch->ch_name);
+#endif
     gtimer_arm_abs(&ch->ch_epg_timer, _epg_channel_timer_callback, ch, next);
   }
 
   /* Update HTSP */
   if ( cur != ch->ch_epg_now ) {
+#ifdef EPG_TIMER_TRACE
     tvhlog(LOG_DEBUG, "epg", "inform HTSP of now event change on %s",
            ch->ch_name);
+#endif
     htsp_channel_update_current(ch);
   }
 
