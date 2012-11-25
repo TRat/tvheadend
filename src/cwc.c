@@ -756,7 +756,7 @@ handle_ecm_reply(cwc_service_t *ct, ecm_section_t *es, uint8_t *msg,
   service_t *t = ct->cs_service;
   cwc_service_t *ct2;
   cwc_t *cwc2;
-  ecm_pid_t *ep;
+  ecm_pid_t *ep, *epn;
   char chaninfo[32];
   int i;
   int64_t delay = (getmonoclock() - es->es_time) / 1000LL; // in ms
@@ -865,6 +865,23 @@ forbid:
     ct->cs_keystate = CS_RESOLVED;
     memcpy(ct->cs_cw, msg + 3, 16);
     ct->cs_pending_cw_update = 1;
+
+    ep = LIST_FIRST(&ct->cs_pids);
+    while(ep != NULL) {
+      if (ct->cs_okchannel == ep->ep_pid) {
+        ep = LIST_NEXT(ep, ep_link);
+      }
+      else {
+        epn = LIST_NEXT(ep, ep_link);
+        for(i = 0; i < 256; i++)
+          free(ep->ep_sections[i]);
+        LIST_REMOVE(ep, ep_link);
+        tvhlog(LOG_DEBUG, "wht", "Delete ECMpid %d", ep->ep_pid);
+        free(ep);
+        ep = epn;
+      }
+    }
+
   }
 }
 
@@ -1592,9 +1609,12 @@ cwc_table_input(struct th_descrambler *td, struct service *t,
   }
 
   if(ep == NULL) {
-    ep = calloc(1, sizeof(ecm_pid_t));
-    ep->ep_pid = st->es_pid;
-    LIST_INSERT_HEAD(&ct->cs_pids, ep, ep_link);
+    if (ct->cs_okchannel == -1) {
+      ep = calloc(1, sizeof(ecm_pid_t));
+      ep->ep_pid = st->es_pid;
+      LIST_INSERT_HEAD(&ct->cs_pids, ep, ep_link);
+    } else
+      return;
   }
 
 
@@ -1625,6 +1645,9 @@ cwc_table_input(struct th_descrambler *td, struct service *t,
       ep->ep_last_section = 0; 
       section = 0;
     }
+
+    channel = st->es_pid;
+    snprintf(chaninfo, sizeof(chaninfo), " (channel %d)", channel);
 
     if(ep->ep_sections[section] == NULL)
       ep->ep_sections[section] = calloc(1, sizeof(ecm_section_t));
