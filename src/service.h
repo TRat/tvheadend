@@ -474,6 +474,7 @@ typedef struct service {
   int s_scrambled;
   int s_scrambled_seen;
   int s_caid;
+  uint16_t s_prefcapid;
   int s_priority;
 
   /**
@@ -598,6 +599,7 @@ void service_set_dvb_charset(service_t *t, const char *dvb_charset);
 
 void service_set_dvb_eit_enable(service_t *t, int dvb_eit_enable);
 
+void service_set_prefcapid(service_t *t, uint32_t prefcapid);
 void service_set_priority(service_t *t, int priority);
 
 int service_is_primary_epg (service_t *t);
