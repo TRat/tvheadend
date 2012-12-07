@@ -526,12 +526,13 @@ dvb_pat_callback(th_dvb_mux_instance_t *tdmi, uint8_t *ptr, int len,
         len1 -= 4;
       }
 
-      if (fnd == 0) {
+      if (fnd == 0) t->s_count_pat_notfound++;
+      if (t->s_count_pat_notfound > 1000) {
         tvhlog(LOG_NOTICE, "dvb", "tansport %d (%s) not found in mux %d. Deleting. \n", t->s_dvb_service_id, t->s_svcname, tdmi->tdmi_transport_stream_id );
-//        hts_settings_remove("dvbtransports/%s/%s",
-//                            t->s_dvb_mux_instance->tdmi_identifier,
-//                            t->s_identifier);
-//        service_destroy(t);
+        hts_settings_remove("dvbtransports/%s/%s",
+                            t->s_dvb_mux_instance->tdmi_identifier,
+                            t->s_identifier);
+        service_destroy(t);
       }
   }
 

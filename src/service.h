@@ -499,6 +499,8 @@ typedef struct service {
 
   int64_t s_current_pts;
 
+  int64_t s_count_pat_notfound;
+
   /**
    * DVB default charset
    * 	used to overide the default ISO6937 per service

@@ -535,6 +535,7 @@ service_create(const char *identifier, int type, int source_type)
   t->s_pcr_last = PTS_UNSET;
   t->s_dvb_charset = NULL;
   t->s_dvb_eit_enable = 1;
+  t->s_count_pat_notfound = 0;
   TAILQ_INIT(&t->s_components);
 
   sbuf_init(&t->s_tsbuf);
