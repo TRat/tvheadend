@@ -256,7 +256,7 @@ function accessUpdate(o) {
 			iconCls : 'wrench',
 			items : [ new tvheadend.miscconf, new tvheadend.chconf,
 				new tvheadend.epggrab, new tvheadend.cteditor,
-				new tvheadend.dvrsettings, new tvheadend.tvadapters,
+				new tvheadend.dvrsettings,
 				new tvheadend.iptv, new tvheadend.acleditor ]
 		});
 		tvheadend.rootTabPanel.add(tvheadend.confpanel);
