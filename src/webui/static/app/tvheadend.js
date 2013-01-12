@@ -257,9 +257,7 @@ function accessUpdate(o) {
 			items : [ new tvheadend.miscconf, new tvheadend.chconf,
 				new tvheadend.epggrab, new tvheadend.cteditor,
 				new tvheadend.dvrsettings, new tvheadend.tvadapters,
-				new tvheadend.iptv, new tvheadend.acleditor,
-				new tvheadend.cwceditor, new tvheadend.capmteditor,
-				new tvheadend.ccweditor]
+				new tvheadend.iptv, new tvheadend.acleditor ]
 		});
 		tvheadend.rootTabPanel.add(tvheadend.confpanel);
 	}
@@ -271,6 +269,7 @@ function accessUpdate(o) {
     if (tvheadend.capabilities.indexOf('cwc')      != -1) {
       tvheadend.confpanel.add(new tvheadend.cwceditor);
       tvheadend.confpanel.add(new tvheadend.capmteditor);
+      tvheadend.confpanel.add(new tvheadend.ccweditor);
     }
     if (tvheadend.capabilities.indexOf('timeshift') != -1) {
       tvheadend.confpanel.add(new tvheadend.timeshift);
