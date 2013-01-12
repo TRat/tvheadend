@@ -1,3 +1,6 @@
+tvheadend.accessupdate = null;
+tvheadend.capabilties  = null;
+
 /**
  * Displays a help popup window
  */
@@ -26,6 +29,21 @@ tvheadend.help = function(title, pagename) {
 		}
 	});
 }
+
+/*
+ * General capabilities
+ */
+Ext.Ajax.request({
+  url: 'capabilities',
+  success: function(d)
+  {
+    if (d && d.responseText)
+      tvheadend.capabilities = Ext.util.JSON.decode(d.responseText);
+    if (tvheadend.capabilities && tvheadend.accessupdate)
+      accessUpdate(tvheadend.accessUpdate);
+    
+  }
+});
 
 /**
  * Displays a mediaplayer using VLC plugin
@@ -223,6 +241,7 @@ tvheadend.VLC = function(url) {
  * Obviosuly, access is verified in the server too.
  */
 function accessUpdate(o) {
+  tvheadend.accessUpdate = o;
 
 	if (o.dvr == true && tvheadend.dvrpanel == null) {
 		tvheadend.dvrpanel = new tvheadend.dvr;
@@ -244,6 +263,20 @@ function accessUpdate(o) {
 		});
 		tvheadend.rootTabPanel.add(tvheadend.confpanel);
 	}
+  if (tvheadend.capabilities && tvheadend.confpanel) {
+    if (tvheadend.capabilities.indexOf('linuxdvb') != -1 ||
+        tvheadend.capabilities.indexOf('v4l')      != -1) {
+      tvheadend.confpanel.add(new tvheadend.tvadapters);
+    }
+    if (tvheadend.capabilities.indexOf('cwc')      != -1) {
+      tvheadend.confpanel.add(new tvheadend.cwceditor);
+      tvheadend.confpanel.add(new tvheadend.capmteditor);
+    }
+    if (tvheadend.capabilities.indexOf('timeshift') != -1) {
+      tvheadend.confpanel.add(new tvheadend.timeshift);
+    }
+    tvheadend.confpanel.doLayout();
+  }
 
 	if (o.admin == true && tvheadend.statuspanel == null) {
 		tvheadend.statuspanel = new tvheadend.status;

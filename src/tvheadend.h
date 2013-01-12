@@ -31,11 +31,32 @@
 #include "queue.h"
 #include "avg.h"
 #include "hts_strtab.h"
+#include "htsmsg.h"
 
 #include "redblack.h"
 
-extern const char *tvheadend_version;
-extern char *tvheadend_cwd;
+typedef struct {
+  const char     *name;
+  const uint32_t *enabled;
+} tvh_caps_t;
+extern const char      *tvheadend_version;
+extern const char      *tvheadend_cwd;
+extern const char      *tvheadend_webroot;
+extern const tvh_caps_t tvheadend_capabilities[];
+
+static inline htsmsg_t *tvheadend_capabilities_list(int check)
+{
+  int i = 0;
+  htsmsg_t *r = htsmsg_create_list();
+  while (tvheadend_capabilities[i].name) {
+    if (!check ||
+        !tvheadend_capabilities[i].enabled ||
+        *tvheadend_capabilities[i].enabled)
+      htsmsg_add_str(r, NULL, tvheadend_capabilities[i].name);
+    i++;
+  }
+  return r;
+}
 
 #define PTS_UNSET INT64_C(0x8000000000000000)
 
@@ -43,8 +64,9 @@ extern pthread_mutex_t global_lock;
 extern pthread_mutex_t ffmpeg_lock;
 extern pthread_mutex_t fork_lock;
 
-extern int webui_port;
-extern int htsp_port;
+extern int tvheadend_webui_port;
+extern int tvheadend_webui_debug;
+extern int tvheadend_htsp_port;
 
 typedef struct source_info {
   char *si_device;
@@ -189,6 +211,25 @@ typedef struct signal_status {
 } signal_status_t;
 
 /**
+ * Streaming skip
+ */
+typedef struct streaming_skip
+{
+  enum {
+    SMT_SKIP_ERROR,
+    SMT_SKIP_REL_TIME,
+    SMT_SKIP_ABS_TIME,
+    SMT_SKIP_REL_SIZE,
+    SMT_SKIP_ABS_SIZE
+  } type;
+  union {
+    off_t   size;
+    int64_t time;
+  };
+} streaming_skip_t;
+
+
+/**
  * A streaming pad generates data.
  * It has one or more streaming targets attached to it.
  *
@@ -212,6 +253,7 @@ TAILQ_HEAD(streaming_message_queue, streaming_message);
  * Streaming messages types
  */
 typedef enum {
+
   /**
    * Packet with data.
    *
@@ -269,6 +311,17 @@ typedef enum {
    * Internal message to exit receiver
    */
   SMT_EXIT,
+
+  /**
+   * Set stream speed
+   */
+  SMT_SPEED,
+
+  /**
+   * Skip the stream
+   */
+  SMT_SKIP,
+
 } streaming_message_type_t;
 
 #define SMT_TO_MASK(x) (1 << ((unsigned int)x))
@@ -304,6 +357,10 @@ typedef enum {
 typedef struct streaming_message {
   TAILQ_ENTRY(streaming_message) sm_link;
   streaming_message_type_t sm_type;
+#if ENABLE_TIMESHIFT
+  int64_t  sm_time;
+  uint64_t sm_timeshift;
+#endif
   union {
     void *sm_data;
     int sm_code;
@@ -367,6 +424,7 @@ static inline unsigned int tvh_strhash(const char *s, unsigned int mod)
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 void tvh_str_set(char **strp, const char *src);
 int tvh_str_update(char **strp, const char *src);
@@ -451,6 +509,8 @@ int tvh_open(const char *pathname, int flags, mode_t mode);
 int tvh_socket(int domain, int type, int protocol);
 
 int tvh_pipe(int flags, th_pipe_t *pipe);
+
+int tvh_write(int fd, const void *buf, size_t len);
 
 void hexdump(const char *pfx, const uint8_t *data, int len);
 

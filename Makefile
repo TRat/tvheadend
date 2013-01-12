@@ -52,9 +52,9 @@ MKBUNDLE = $(PYTHON) $(CURDIR)/support/mkbundle
 #
 
 ifndef V
-ECHO   = printf "$(1)\t\t%s\n" $(2)
+ECHO   = printf "%-16s%s\n" $(1) $(2)
 BRIEF  = CC MKBUNDLE CXX
-MSG    = $@
+MSG    = $(subst $(CURDIR)/,,$@)
 $(foreach VAR,$(BRIEF), \
     $(eval $(VAR) = @$$(call ECHO,$(VAR),$$(MSG)); $($(VAR))))
 endif
@@ -106,28 +106,27 @@ SRCS =  src/main.c \
 	src/avc.c \
   src/huffman.c \
   src/filebundle.c \
-  src/muxes.c \
   src/config2.c \
   src/lang_codes.c \
   src/lang_str.c \
+  src/imagecache.c
 
 SRCS += src/epggrab/module.c\
   src/epggrab/channel.c\
-  src/epggrab/otamux.c\
   src/epggrab/module/pyepg.c\
   src/epggrab/module/xmltv.c\
+
+SRCS-$(CONFIG_LINUXDVB) += src/epggrab/otamux.c\
   src/epggrab/module/eit.c \
   src/epggrab/module/opentv.c \
   src/epggrab/support/freesat_huffman.c \
 
 SRCS += src/plumbing/tsfix.c \
-	src/plumbing/globalheaders.c \
+	src/plumbing/globalheaders.c
 
 SRCS += src/dvr/dvr_db.c \
 	src/dvr/dvr_rec.c \
 	src/dvr/dvr_autorec.c \
-	src/dvr/ebml.c \
-	src/dvr/mkmux.c \
 
 SRCS += src/webui/webui.c \
 	src/webui/comet.c \
@@ -137,12 +136,21 @@ SRCS += src/webui/webui.c \
 	src/webui/html.c\
 
 SRCS += src/muxer.c \
-	src/muxer_pass.c \
-	src/muxer_tvh.c \
+	src/muxer/muxer_pass.c \
+	src/muxer/muxer_tvh.c \
+	src/muxer/tvh/ebml.c \
+	src/muxer/tvh/mkmux.c \
 
 #
 # Optional code
 #
+
+# Timeshift
+SRCS-${CONFIG_TIMESHIFT} += \
+  src/timeshift.c \
+  src/timeshift/timeshift_filemgr.c \
+  src/timeshift/timeshift_writer.c \
+  src/timeshift/timeshift_reader.c \
 
 # DVB
 SRCS-${CONFIG_LINUXDVB} += \
@@ -160,6 +168,11 @@ SRCS-${CONFIG_LINUXDVB} += \
 	src/dvb/dvb_input_filtered.c \
 	src/dvb/dvb_input_raw.c \
 	src/webui/extjs_dvb.c \
+	src/muxes.c \
+
+# Inotify
+SRCS-${CONFIG_INOTIFY} += \
+  src/dvr/dvr_inotify.c \
 
 # V4L
 SRCS-${CONFIG_V4L} += \
@@ -168,6 +181,10 @@ SRCS-${CONFIG_V4L} += \
 
 # Avahi
 SRCS-$(CONFIG_AVAHI) += src/avahi.c
+
+# libav
+SRCS-$(CONFIG_LIBAV) += src/libav.c \
+	src/muxer/muxer_libav.c
 
 # CWC
 SRCS-${CONFIG_CWC} += src/cwc.c \
@@ -178,8 +195,10 @@ SRCS-${CONFIG_CWC} += src/cwc.c \
 ifneq ($(CONFIG_DVBCSA),yes)
 SRCS-${CONFIG_CWC}  += src/ffdecsa/ffdecsa_interface.c \
 	src/ffdecsa/ffdecsa_int.c
+ifeq ($(CONFIG_CWC),yes)
 SRCS-${CONFIG_MMX}  += src/ffdecsa/ffdecsa_mmx.c
 SRCS-${CONFIG_SSE2} += src/ffdecsa/ffdecsa_sse2.c
+endif
 ${BUILDDIR}/src/ffdecsa/ffdecsa_mmx.o  : CFLAGS += -mmmx
 ${BUILDDIR}/src/ffdecsa/ffdecsa_sse2.o : CFLAGS += -msse2
 endif
@@ -214,10 +233,20 @@ DEPS       = ${OBJS:%.o=%.d}
 all: ${PROG}
 
 # Special
-.PHONY:	clean distclean
+.PHONY:	clean distclean check_config reconfigure
+
+# Check configure output is valid
+check_config:
+	@test $(CURDIR)/.config.mk -nt $(CURDIR)/configure\
+		|| echo "./configure output is old, please re-run"
+	@test $(CURDIR)/.config.mk -nt $(CURDIR)/configure
+
+# Recreate configuration
+reconfigure:
+	$(CURDIR)/configure $(CONFIGURE_ARGS)
 
 # Binary
-${PROG}: $(OBJS) $(ALLDEPS)
+${PROG}: check_config $(OBJS) $(ALLDEPS)
 	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LDFLAGS)
 
 # Object

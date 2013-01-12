@@ -32,6 +32,7 @@
 #include "dvr/dvr.h"
 #include "htsp_server.h"
 #include "epggrab.h"
+#include "imagecache.h"
 
 /* Broadcast hashing */
 #define EPG_HASH_WIDTH 1024
@@ -459,8 +460,12 @@ int epg_brand_set_summary
 int epg_brand_set_image
   ( epg_brand_t *brand, const char *image, epggrab_module_t *src )
 {
+  int save;
   if (!brand || !image) return 0;
-  return _epg_object_set_str(brand, &brand->image, image, src);
+  save = _epg_object_set_str(brand, &brand->image, image, src);
+  if (save)
+    imagecache_get_id(image);
+  return save;
 }
 
 int epg_brand_set_season_count
@@ -628,8 +633,12 @@ int epg_season_set_summary
 int epg_season_set_image
   ( epg_season_t *season, const char *image, epggrab_module_t *src )
 {
+  int save;
   if (!season || !image) return 0;
-  return _epg_object_set_str(season, &season->image, image, src);
+  save = _epg_object_set_str(season, &season->image, image, src);
+  if (save)
+    imagecache_get_id(image);
+  return save;
 }
 
 int epg_season_set_episode_count
@@ -891,8 +900,12 @@ int epg_episode_set_description
 int epg_episode_set_image
   ( epg_episode_t *episode, const char *image, epggrab_module_t *src )
 {
+  int save;
   if (!episode || !image) return 0;
-  return _epg_object_set_str(episode, &episode->image, image, src);
+  save = _epg_object_set_str(episode, &episode->image, image, src);
+  if (save)
+    imagecache_get_id(image);
+  return save;
 }
 
 int epg_episode_set_number
@@ -1078,8 +1091,8 @@ size_t epg_episode_number_format
     if ( cfmt && num.e_cnt )
       i+= snprintf(&buf[i], len-i, cfmt, num.e_cnt);
   } else if ( num.text ) {
-    strncpy(buf, num.text, len);
-    i = strlen(buf);
+    if (pre) i += snprintf(&buf[i], len-i, "%s", pre);
+    i += snprintf(&buf[i], len-i, "%s", num.text);
   }
   return i;
 }

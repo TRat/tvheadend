@@ -24,6 +24,14 @@ tvheadend.dvb_muxes = function(adapterData, satConfStore) {
 	var cmlist = Array();
 
 	cmlist.push(enabledColumn, {
+		header : "Play",
+		dataIndex : 'id',
+		width : 50,
+		renderer : function(value, metadata, record, row, col, store) {
+			url = 'stream/mux/' + value
+			return '<a href="' + url + '">Play</a>'
+		}
+	}, {
 		header : "Network",
 		dataIndex : 'network',
 		width : 200
@@ -498,6 +506,10 @@ tvheadend.dvb_services = function(adapterId) {
 			dataIndex : 'network',
 			width : 100
 		}, {
+			header : "Encryption",
+			dataIndex : 'encryption',
+			width : 100
+		}, {
 			header : "Multiplex",
 			dataIndex : 'mux',
 			width : 100
@@ -531,8 +543,8 @@ tvheadend.dvb_services = function(adapterId) {
 	var store = new Ext.data.JsonStore({
 		root : 'entries',
 		fields : Ext.data.Record.create([ 'id', 'enabled', 'type', 'sid', 'pmt',
-			'pcr', 'svcname', 'network', 'provider', 'mux', 'channelname', 'prefcapid',
-			'priority', 'dvb_charset', 'dvb_eit_enable' ]),
+			'pcr', 'svcname', 'network', 'provider', 'encryption', 'mux', 'channelname',
+			'prefcapid', 'priority', 'dvb_charset', 'dvb_eit_enable' ]),
 		url : "dvb/services/" + adapterId,
 		autoLoad : true,
 		id : 'id',
@@ -1096,7 +1108,7 @@ tvheadend.dvb_adapter_general = function(adapterData, satConfStore) {
 
 	var confreader = new Ext.data.JsonReader({
 		root : 'dvbadapters'
-	}, [ 'name', 'automux', 'skip_initialscan', 'idlescan', 'diseqcversion',
+	}, [ 'name', 'enabled', 'automux', 'skip_initialscan', 'idlescan', 'diseqcversion',
 		'diseqcrepeats', 'qmon', 'skip_checksubscr', 
 		'poweroff', 'sidtochan', 'nitoid', 'extrapriority',
 		,'disable_pmt_monitor', 'full_mux_rx', 'idleclose' ]);
@@ -1117,6 +1129,10 @@ tvheadend.dvb_adapter_general = function(adapterData, satConfStore) {
 			name : 'name',
 			width : 250
 		},
+		new Ext.form.Checkbox({
+			fieldLabel : 'Enabled',
+			name : 'enabled'
+		}),
 		new Ext.form.Checkbox({
 			fieldLabel : 'Autodetect muxes',
 			name : 'automux'

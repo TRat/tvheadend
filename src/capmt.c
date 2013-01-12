@@ -227,7 +227,7 @@ static int
 capmt_send_msg(capmt_t *capmt, int sid, const uint8_t *buf, size_t len)
 {
   if (capmt->capmt_oscam) {
-    int i, sent = 0;
+    int i;
 
     // dumping current SID table
     for (i = 0; i < MAX_SOCKETS; i++)
@@ -280,18 +280,17 @@ capmt_send_msg(capmt_t *capmt, int sid, const uint8_t *buf, size_t len)
         tvhlog(LOG_DEBUG, "capmt", "created socket with socket_fd=%d", capmt->capmt_sock[i]);
     }
     if (capmt->capmt_sock[i] > 0) {
-      sent = write(capmt->capmt_sock[i], buf, len);
-      tvhlog(LOG_DEBUG, "capmt", "socket_fd=%d len=%d sent=%d", capmt->capmt_sock[i], (int)len, sent);
-      if (sent != len) {
-        tvhlog(LOG_ERR, "capmt", "%s: len != sent", __FUNCTION__);
+      if (tvh_write(capmt->capmt_sock[i], buf, len)) {
+        tvhlog(LOG_DEBUG, "capmt", "socket_fd=%d send failed", capmt->capmt_sock[i]);
         close(capmt->capmt_sock[i]);
         capmt->capmt_sock[i] = 0;
+        return -1;
       }
     }
-    return sent;
   }
   else  // standard old capmt mode
-    return write(capmt->capmt_sock[0], buf, len);
+    tvh_write(capmt->capmt_sock[0], buf, len);
+  return 0;
 }
 
 static void 
@@ -572,7 +571,6 @@ capmt_thread(void *aux)
   capmt_t *capmt = aux;
   struct timespec ts;
   int d, i, bind_ok = 0;
-  th_dvb_adapter_t *tda;
 
   while (capmt->capmt_running) {
     for (i = 0; i < MAX_CA; i++)
@@ -605,6 +603,8 @@ capmt_thread(void *aux)
       if (!capmt->capmt_oscam) {
         bind_ok = capmt_create_udp_socket(&capmt->capmt_sock_ca0[0], capmt->capmt_port);
       } else {
+#if ENABLE_LINUXDVB
+        th_dvb_adapter_t *tda;
         TAILQ_FOREACH(tda, &dvb_adapters, tda_global_link) {
           if (tda->tda_rootpath) {          //if rootpath is NULL then can't rely on tda_adapter_num because it is always 0
             if (tda->tda_adapter_num > MAX_CA) {
@@ -615,6 +615,7 @@ capmt_thread(void *aux)
             bind_ok = capmt_create_udp_socket(&capmt->capmt_sock_ca0[tda->tda_adapter_num], 9000 + tda->tda_adapter_num);
           }
         }
+#endif
       }
       if (bind_ok)
         handle_ca0(capmt);
@@ -718,7 +719,9 @@ capmt_table_input(struct th_descrambler *td, struct service *t,
 
           uint16_t sid = t->s_dvb_service_id;
           uint16_t ecmpid = st->es_pid;
-          uint16_t transponder = 0;
+          uint16_t transponder = t->s_dvb_mux_instance->tdmi_transport_stream_id;
+          uint16_t onid = t->s_dvb_mux_instance->tdmi_network_id;
+          
 
           /* don't do too much requests */
           if (current_caid == total_caids && caid != ct->ct_caid_last)
@@ -756,9 +759,9 @@ capmt_table_input(struct th_descrambler *td, struct service *t,
           capmt_descriptor_t prd = { 
             .cad_type = CAPMT_DESC_PRIVATE, 
             .cad_length = 0x08,
-            .cad_data = { 0x00, 0x00, 0x00, 0x00, 
-              sid >> 8, sid & 0xFF,
-              transponder >> 8, transponder & 0xFF
+            .cad_data = { 0x00, 0x00, 0x00, 0x00, // enigma namespace goes here              
+              transponder >> 8, transponder & 0xFF,
+              onid >> 8, onid & 0xFF
             }};
           memcpy(&buf[pos], &prd, prd.cad_length + 2);
           pos += prd.cad_length + 2;
@@ -1008,6 +1011,10 @@ capmt_service_start(service_t *t)
   lock_assert(&global_lock);
 
   TAILQ_FOREACH(capmt, &capmts, capmt_link) {
+    /* skip, if we're not active */
+    if (!capmt->capmt_enabled)
+      continue;
+
     tvhlog(LOG_INFO, "capmt",
       "Starting capmt server for service \"%s\" on tuner %d", 
       t->s_svcname,

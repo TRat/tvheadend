@@ -173,18 +173,18 @@ http_send_header(http_connection_t *hc, int rc, const char *content,
 
     tm = gmtime_r(&t, &tm0);
     htsbuf_qprintf(&hdrs, 
-		"Last-Modified: %s, %02d %s %d %02d:%02d:%02d GMT\r\n",
-		cachedays[tm->tm_wday],	tm->tm_year + 1900,
-		cachemonths[tm->tm_mon], tm->tm_mday,
-		tm->tm_hour, tm->tm_min, tm->tm_sec);
+                "Last-Modified: %s, %d %s %02d %02d:%02d:%02d GMT\r\n",
+                cachedays[tm->tm_wday], tm->tm_mday, 
+                cachemonths[tm->tm_mon], tm->tm_year + 1900,
+                tm->tm_hour, tm->tm_min, tm->tm_sec);
 
     t += maxage;
 
     tm = gmtime_r(&t, &tm0);
     htsbuf_qprintf(&hdrs, 
-		"Expires: %s, %02d %s %d %02d:%02d:%02d GMT\r\n",
-		cachedays[tm->tm_wday],	tm->tm_year + 1900,
-		cachemonths[tm->tm_mon], tm->tm_mday,
+		"Expires: %s, %d %s %02d %02d:%02d:%02d GMT\r\n",
+		cachedays[tm->tm_wday],	tm->tm_mday,
+                cachemonths[tm->tm_mon], tm->tm_year + 1900,
 		tm->tm_hour, tm->tm_min, tm->tm_sec);
       
     htsbuf_qprintf(&hdrs, "Cache-Control: max-age=%d\r\n", maxage);
@@ -607,9 +607,15 @@ http_path_add(const char *path, void *opaque, http_callback_t *callback,
 	      uint32_t accessmask)
 {
   http_path_t *hp = malloc(sizeof(http_path_t));
+  char *tmp;
 
-  hp->hp_len      = strlen(path);
-  hp->hp_path     = strdup(path);
+  if (tvheadend_webroot) {
+    size_t len = strlen(tvheadend_webroot) + strlen(path) + 1;
+    hp->hp_path     = tmp = malloc(len);
+    sprintf(tmp, "%s%s", tvheadend_webroot, path);
+  } else
+    hp->hp_path     = strdup(path);
+  hp->hp_len      = strlen(hp->hp_path);
   hp->hp_opaque   = opaque;
   hp->hp_callback = callback;
   hp->hp_accessmask = accessmask;
@@ -808,5 +814,5 @@ http_serve(int fd, void *opaque, struct sockaddr_in *peer,
 void
 http_server_init(void)
 {
-  http_server = tcp_server_create(webui_port, http_serve, NULL);
+  http_server = tcp_server_create(tvheadend_webui_port, http_serve, NULL);
 }

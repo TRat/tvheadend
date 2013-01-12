@@ -356,9 +356,10 @@ dvb_service_find3
   service_t *svc;
   if (tdmi) {
     LIST_FOREACH(svc, &tdmi->tdmi_transports, s_group_link) {
+      if (sid != svc->s_dvb_service_id) continue;
       if (enabled    && !svc->s_enabled) continue;
       if (epgprimary && !service_is_primary_epg(svc)) continue;
-      if (sid == svc->s_dvb_service_id) return svc;
+      return svc;
     }
   } else if (tda) {
     LIST_FOREACH(tdmi, &tda->tda_muxes, tdmi_adapter_link) {
@@ -452,6 +453,7 @@ dvb_service_build_msg(service_t *t)
 {
   th_dvb_mux_instance_t *tdmi = t->s_dvb_mux_instance;
   htsmsg_t *m = htsmsg_create_map();
+  uint16_t caid;
   char buf[100];
  
   htsmsg_add_str(m, "id", t->s_identifier);
@@ -468,6 +470,9 @@ dvb_service_build_msg(service_t *t)
   htsmsg_add_str(m, "provider", t->s_provider ?: "");
 
   htsmsg_add_str(m, "network", tdmi->tdmi_network ?: "");
+
+  if((caid = service_get_encryption(t)) != 0)
+    htsmsg_add_str(m, "encryption", psi_caid2name(caid));
 
   dvb_mux_nicefreq(buf, sizeof(buf), tdmi);
   htsmsg_add_str(m, "mux", buf);

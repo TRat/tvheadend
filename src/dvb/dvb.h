@@ -200,6 +200,8 @@ typedef struct th_dvb_adapter {
 
   int tda_table_epollfd;
 
+  uint32_t tda_enabled;
+
   const char *tda_rootpath;
   char *tda_identifier;
   uint32_t tda_autodiscovery;
@@ -227,6 +229,7 @@ typedef struct th_dvb_adapter {
 
   char *tda_demux_path;
 
+  char *tda_dvr_path;
   pthread_t tda_dvr_thread;
   th_pipe_t tda_dvr_pipe;
 
@@ -341,6 +344,8 @@ void dvb_adapter_start (th_dvb_adapter_t *tda);
 void dvb_adapter_stop (th_dvb_adapter_t *tda);
 
 void dvb_adapter_set_displayname(th_dvb_adapter_t *tda, const char *s);
+
+void dvb_adapter_set_enabled(th_dvb_adapter_t *tda, int on);
 
 void dvb_adapter_set_auto_discovery(th_dvb_adapter_t *tda, int on);
 
@@ -543,7 +548,10 @@ void dvb_lnb_get_frequencies(const char *id,
 struct th_subscription;
 struct th_subscription *dvb_subscription_create_from_tdmi(th_dvb_mux_instance_t *tdmi,
 							  const char *name,
-							  streaming_target_t *st);
+							  streaming_target_t *st,
+							  const char *hostname,
+							  const char *username,
+							  const char *client);
 
 #endif /* DVB_H_ */
 
